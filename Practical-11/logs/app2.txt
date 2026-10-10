@@ -1,4 +1,0 @@
-Server started
-ERROR: File not found
-User logged in
-Server stopped
