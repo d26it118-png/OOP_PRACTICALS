@@ -1,0 +1,4 @@
+Login successful
+Data saved
+ERROR: Invalid input
+Application restarted

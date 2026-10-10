@@ -13,7 +13,7 @@ public class LogAnalyzer {
             // Create logs folder
             Files.createDirectories(folder);
 
-            // Create sample log files
+            // Create sample text files
             Path file1 = folder.resolve("app1.txt");
             Path file2 = folder.resolve("app2.txt");
             Path file3 = folder.resolve("app3.txt");
@@ -36,50 +36,49 @@ public class LogAnalyzer {
                     "ERROR: Invalid input",
                     "Application restarted"));
 
-            // Keyword to search
             String keyword = "ERROR";
 
             int totalLines = 0;
-            int keywordLines = 0;
+            int keywordCount = 0;
 
-            // Read all files
+            // Read all text files from logs folder
             try (DirectoryStream<Path> files = Files.newDirectoryStream(folder, "*.txt")) {
 
                 for (Path file : files) {
 
                     System.out.println("\nFile: " + file.getFileName());
 
-                    // Get file attributes
-                    BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
+                    // Get file size using attributes
+                    BasicFileAttributes attributes = Files.readAttributes(
+                            file,
+                            BasicFileAttributes.class);
 
-                    System.out.println("Size: " + attributes.size() + " bytes");
+                    System.out.println(
+                            "Size: " + attributes.size() + " bytes");
 
                     // Read file line by line
-                    try {
-                        List<String> lines = Files.readAllLines(file);
+                    List<String> lines = Files.readAllLines(file);
 
-                        for (String line : lines) {
+                    for (String line : lines) {
 
-                            totalLines++;
+                        totalLines++;
 
-                            if (line.contains(keyword)) {
-                                keywordLines++;
-                            }
+                        if (line.contains(keyword)) {
+                            keywordCount++;
                         }
-
-                    } catch (IOException e) {
-                        System.out.println("Error reading " + file.getFileName());
                     }
                 }
             }
 
-            System.out.println("\n-----------------------------");
-            System.out.println("Total lines        : " + totalLines);
-            System.out.println("Lines containing " + keyword + " : " + keywordLines);
-            System.out.println("-----------------------------");
+            // Display final result
+            System.out.println("\n==========================");
+            System.out.println("Total Lines     : " + totalLines);
+            System.out.println(
+                    "Lines with " + keyword + " : " + keywordCount);
+            System.out.println("==========================");
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error: " + e.getMessage());
         }
     }
 }
