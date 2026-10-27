@@ -1,11 +1,17 @@
-package MiniBank.model;
+package model;
+import java.io.Serializable;
 
-public class Customer implements Cloneable {
+public class Customer implements Cloneable, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private String name;
     private String email;
     private String mobile;
-    private Address address;
     private final String customerId;
+
+    private Address address;
+
     private static long customerCounter = 100;
 
     private static String generateCustomerId() {
@@ -13,26 +19,11 @@ public class Customer implements Cloneable {
         return "CUST" + customerCounter;
     }
 
-    public Customer(String name, String email, String mobile) {
-        this.customerId = generateCustomerId();
-        this.name = name;
-        this.email = email;
-        this.mobile = mobile;
-    }
+    // Address nested class
+    public static class Address implements Serializable {
 
-    public String getCustomerId() { return customerId; }
-    public String getName() { return name; }
-    public String getEmail() { return email; }
-    public String getMobile() { return mobile; }
+        private static final long serialVersionUID = 1L;
 
-    // ----------- Practical - 3 ----------------
-
-    public void setAddress(Address address) {
-        this.address = address;
-    }
-
-    public Address getAddress() { return address; }
-    public static class Address {
         private String line;
         private String city;
         private String pincode;
@@ -42,17 +33,55 @@ public class Customer implements Cloneable {
             this.city = city;
             this.pincode = pincode;
         }
-        public String getFullAddress(){ return line+", "+city+", "+pincode; }
-        public String getLine() { return line; }
-        public String getCity() { return city; }
-        public String getPincode() { return pincode; }
-    }
 
-    public Customer clone() {
-        try {
-            return (Customer) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError(e);
+        public String getLine() {
+            return line;
+        }
+
+        public String getCity() {
+            return city;
+        }
+
+        public String getPincode() {
+            return pincode;
         }
     }
+
+    // Customer constructor
+    public Customer(String name, String email, String mobile, Address address) {
+        this.customerId = generateCustomerId();
+        this.name = name;
+        this.email = email;
+        this.mobile = mobile;
+        this.address = address;
+    }
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getMobile() {
+        return mobile;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    @Override
+public Customer clone() {
+    try {
+        return (Customer) super.clone();
+    } catch (CloneNotSupportedException e) {
+        throw new AssertionError();
+    }
+}
 }

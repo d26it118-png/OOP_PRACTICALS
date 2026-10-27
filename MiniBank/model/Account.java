@@ -1,46 +1,99 @@
-package MiniBank.model;
+package model;
+import java.io.Serializable;
+import exception.AccountNotFoundException;
+import exception.BankException;
+import exception.InsufficientFundsException;
+import exception.InvalidAmountException;
+import model.annotation.Id;
+import model.annotation.Positive;
+import model.annotation.MaxLength;
+public abstract class Account implements Transactable, InterestBearing, Serializable, Comparable<Account> {
 
-import MiniBank.exception.BankException;
-import MiniBank.exception.InsufficientFundsException;
-import MiniBank.exception.InvalidAmountException;
-import MiniBank.exception.AccountNotFoundException;
+    private static final long serialVersionUID = 1L;
 
-public abstract class Account implements Transactable, InterestBearing {
+    @Id
     private final String accountNumber;
-    private String ownerName;
-    private long balance;
-    private boolean active;
-    private static int nextAccountNumber = 1;
 
-    public Account(String ownerName, long openingBalance) {
-        this.accountNumber = String.format("AC%04d", nextAccountNumber++);
+    @MaxLength(50)
+    private String ownerName;
+
+    @Positive
+    private long balance;
+
+    private boolean active;
+
+    private static long AccountCounter = 0;
+
+      private static String generateAccountNumber() {
+        AccountCounter++;
+        return String.format("AC%04d", AccountCounter);
+    }
+
+    public Account(String ownerName, long initialBalance) {
+        this.accountNumber = generateAccountNumber();
         this.ownerName = ownerName;
-        this.balance = openingBalance;
+        this.balance = initialBalance;
         this.active = true;
     }
 
-    public Account(String accountNumber, String ownerName, long balance, boolean active) {
-        this.accountNumber = accountNumber;
-        this.ownerName = ownerName;
-        this.balance = balance;
-        this.active = active;
+    public Account(String ownerName) {
+     
+        this(ownerName, 0);
+    }
+    
+    public synchronized void deposit(long amount) throws InvalidAmountException {
+        if (amount <= 0) {
+            throw new InvalidAmountException("Deposit amount must be greater than zero.");
+        }
+        balance += amount;
     }
 
-    // Abstract methods
-    public abstract double interestRate();
+    public synchronized void withdraw(long amount) throws InsufficientFundsException, InvalidAmountException {
+        if (amount <= 0) {
+            throw new InvalidAmountException("Withdrawal amount must be greater than zero.");
+        }
+        if (!canWithdraw(amount)) {
+            throw new InsufficientFundsException(Math.max(1, amount - balance));
+        }
+        balance -= amount;
+    }
 
-    public abstract boolean canWithdraw(long amount);
+    public void transfer(Account to, long amount) throws BankException {
+        try {
+            if (to == null) {
+                throw new AccountNotFoundException("Destination account not found.");
+            }
 
-    // Getters
-    public String getAccountNumber() {
+            Account firstLock = accountNumber.compareTo(to.accountNumber) <= 0 ? this : to;
+            Account secondLock = firstLock == this ? to : this;
+
+            synchronized (firstLock) {
+                synchronized (secondLock) {
+                    withdraw(amount);
+                    to.deposit(amount);
+                }
+            }
+        } catch (BankException exception) {
+            throw exception;
+        } finally {
+            System.out.println("Transfer attempt completed.");
+        }
+    }
+
+      public String getAccountNumber() {
         return accountNumber;
     }
 
-    public String getOwnerName() {
-        return ownerName;
-    }
+      @Override
+      public int compareTo(Account other) {
+          return accountNumber.compareTo(other.accountNumber);
+      }
 
-    public long getBalance() {
+      public String getOwnerName() {
+          return ownerName;
+      }
+
+    public synchronized long getBalance() {
         return balance;
     }
 
@@ -48,52 +101,30 @@ public abstract class Account implements Transactable, InterestBearing {
         return active;
     }
 
-    // Existing methods
-    public void deposit(long amount) throws InvalidAmountException {
-        if (amount <= 0) {
-            throw new InvalidAmountException("Deposit amount must be greater than zero.");
-        }
+    @Override
+public synchronized String toString() {
+    return "Account Number: " + accountNumber + ", Owner Name: " + ownerName + ", Balance: " + balance + ", Active: " + active;
+}
 
-        balance += amount;
+   @Override
+public boolean equals(Object o) {
+
+    if (!(o instanceof Account)) {
+        return false;
     }
 
-    public boolean withdraw(long amount) throws InsufficientFundsException, InvalidAmountException {
-        if (amount <= 0) {
-            throw new InvalidAmountException("Withdrawal amount must be greater than zero.");
-        }
+    Account other = (Account) o;
 
-        if (!canWithdraw(amount)) {
-            long shortfall = amount - balance;
-            throw new InsufficientFundsException("Insufficient funds. Shortfall: " + shortfall, shortfall);
-        }
+    return this.accountNumber.equals(other.accountNumber);
+}
 
-        balance -= amount;
-        return true;
-    }
+@Override
+public int hashCode() {
+    return accountNumber.hashCode();
+}
 
-    public void transfer(Account to, long amount) throws BankException {
-        try {
-            if (to == null) {
-                throw new AccountNotFoundException("Destination account was not found.");
-            }
-            withdraw(amount);
-            to.deposit(amount);
+public abstract double interestRate();
 
-        } catch (BankException e) {
-            System.out.println("Transfer failed: " + e.getMessage());
-            throw e;
-        } finally {
-            System.out.println("Transfer operation completed.");
-        }
-    }
-
-    public String toString() {
-        return "Account{" +
-                "accountNumber='" + accountNumber + '\'' +
-                ", ownerName='" + ownerName + '\'' +
-                ", balance=" + balance +
-                ", active=" + active +
-                '}';
-    }
+public abstract boolean canWithdraw(long amount);
 
 }
